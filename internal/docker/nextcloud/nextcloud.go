@@ -7,7 +7,7 @@ import (
 	targz "nxctl/internal/archive/tar"
 	"nxctl/internal/docker"
 	"nxctl/internal/proc"
-	"nxctl/utils"
+	"nxctl/internal/utils"
 	"os"
 	"path"
 )
@@ -64,7 +64,7 @@ func (nx *Nextcloud) CreateSnapshot() error {
 
 	restic, err := restic.Load()
 	if err != nil {
-		log.Printf("Failed to create Restic instance: %s\n", err)
+		log.Printf("failed to create Restic instance:\n%s\n", err)
 		return err
 	}
 
@@ -75,10 +75,10 @@ func (nx *Nextcloud) CreateSnapshot() error {
 
 	// TODO: Use Goroutines!
 	for index, target := range targetPaths {
-		log.Printf("Restic: [%d of %d] Backing up %s .\n", index+1, len(targetPaths), target)
+		log.Printf("Restic: [%d of %d] Backing up %s.\n", index+1, len(targetPaths), target)
 		err := restic.CreateSnapshot(target)
 		if err != nil {
-			log.Printf("Failed to backup %s .\n%s", target, err)
+			log.Printf("Failed to backup %s:\n%s\n", target, err)
 			return err
 		}
 	}
@@ -108,10 +108,10 @@ func (nx *Nextcloud) Backup(backup_path string) error {
 
 	// TODO: Use Goroutines!
 	for index, target := range targets {
-		log.Printf("Tar: [%d of %d] Backing up %s .\n", index+1, len(targets), target)
+		log.Printf("Tar: [%d of %d] Backing up %s.\n", index+1, len(targets), target)
 		err := target.Compress()
 		if err != nil {
-			log.Printf("Failed to backup %s .\n%s", target, err)
+			log.Printf("Failed to backup %s:\n%s\n", target, err)
 			return err
 		}
 	}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"nxctl/internal/proc"
-	"nxctl/utils"
+	"nxctl/internal/utils"
 	"os"
 	"path"
 )
@@ -16,8 +16,14 @@ type Postgres struct {
 	ContainerName string
 }
 
-func Load() (*Postgres, error) {
+type PgDump struct {
+	Directory string
+	Filename  string
+	Extension string
+	Date      string
+}
 
+func Load() (*Postgres, error) {
 	username := os.Getenv("POSTGRES_USER")
 	if username == "" {
 		return nil, fmt.Errorf("POSTGRES_USER is missing!")
@@ -46,13 +52,56 @@ func Load() (*Postgres, error) {
 	}, nil
 }
 
+func (d *PgDump) CreateDumpDir() error {
+	exist, err := utils.DirExist(d.Directory)
+	if err != nil {
+		log.Printf("failed to create PostgreSQL dump directory: %s\n", err)
+		return err
+	}
+
+	if !exist {
+		err = os.Mkdir(d.Directory, 0775)
+		if err != nil {
+			log.Printf("failed to create PostgreSQL dump directory: %s\n", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (p *Postgres) Dump(backup_path string) error {
-	backup_path = path.Join(backup_path, "postgresql")                             // adiciona o diretorio especifico de dump do pgsql
-	filepath := path.Join(backup_path, "nextcloud_pgdump_"+utils.GetDate()+".sql") // constroi o nome do arquivo baseado na data
-	_, stderr := proc.Run(os.Environ(), "docker", "exec", p.ContainerName, "pg_dump", p.DatabaseName, "-U", p.UserName, "-f", filepath)
-	if stderr != nil {
-		log.Printf("Failed to dump PostgreSQL %s database due to: %s", p.DatabaseName, stderr)
-		return stderr
+
+	dump := PgDump{
+		Directory: path.Join(backup_path, "postgresql"),
+		Filename:  "nextcloud_pgdump-",
+		Extension: ".sql",
+		Date:      utils.GetDate(),
+	}
+
+	exist, err := utils.DirExist(dump.Directory)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		err = dump.CreateDumpDir()
+		if err != nil {
+			return err
+		}
+	}
+
+	args := []string{
+		"exec", p.ContainerName,
+		"pg_dump", p.DatabaseName,
+		"-U", p.UserName,
+		"-f", path.Join(dump.Directory, dump.Filename+dump.Date+dump.Extension),
+	}
+
+	_, err = proc.Run(os.Environ(), "docker", args...)
+	if err != nil {
+		log.Printf("Failed to dump PostgreSQL %s database due to: %s", p.DatabaseName, err)
+		return err
 	}
 
 	return nil

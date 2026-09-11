@@ -3,8 +3,9 @@ package config
 import (
 	"fmt"
 	"log"
+	"nxctl/internal/utils"
 	"os"
-	"time"
+	"path"
 )
 
 type Config struct {
@@ -13,25 +14,24 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-
-	backup_volume := os.Getenv("BACKUP_PATH")
-	if backup_volume == "" {
+	backup_path := os.Getenv("BACKUP_PATH")
+	if backup_path == "" {
 		return nil, fmt.Errorf("BACKUP_PATH is missing!")
 	}
 
-	date := time.Now().Format("02-01-2006")
-	backup_dir := backup_volume
-
+	date := utils.GetDate()
 	return &Config{
 		Date:       date,
-		BackupPath: backup_dir,
+		BackupPath: backup_path,
 	}, nil
 }
 
 func (c *Config) CreateBackupDir() error {
 	log.Printf("Creating backup directory: %s\n", c.BackupPath)
-	err := os.Mkdir(c.BackupPath, 0775)
+	err := os.Mkdir(path.Join(c.BackupPath, utils.GetDate()), 0775)
+
 	if err != nil {
+		log.Printf("failed to create backup directory: %s\n", err)
 		return err
 	}
 
