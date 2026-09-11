@@ -1,0 +1,14 @@
+server {
+	listen ${NGINX_PORT_HTTP}; # NGINX Port
+	server_name 10.0.40.34:8090;
+
+	location / {
+		proxy_pass http://pgadmin:80;
+		
+		# Standard proxy headers
+	   	include /etc/nginx/snippets/proxy-headers.conf; 
+
+		# WebSocket support (safe to keep even if not needed)
+	   	include /etc/nginx/snippets/websocket-support.conf;
+	}
+}
