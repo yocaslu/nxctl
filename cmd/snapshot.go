@@ -16,19 +16,19 @@ var snapshotCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		nx, err := nextcloud.Load()
 		if err != nil {
-			log.Printf("failed to load Nextcloud informations: %s\n", err)
+			log.Printf("failed to load Nextcloud informations:\n%s\n", err)
 			return
 		}
 
 		cfg, err := config.Load()
 		if err != nil {
-			log.Printf("failed to load config: %s\n", err)
+			log.Printf("failed to load config:\n%s\n", err)
 			return
 		}
 
 		db, err := postgres.Load()
 		if err != nil {
-			log.Printf("failed to load database informations: %s\n", err)
+			log.Printf("failed to load database informations:\n%s\n", err)
 			return
 		}
 
@@ -36,12 +36,12 @@ var snapshotCmd = &cobra.Command{
 
 		err = db.Dump(cfg.BackupPath)
 		if err != nil {
-			log.Printf("failed to dump database: %s\n", err)
+			log.Printf("failed to dump database:\n%s\n", err)
 		}
 
 		err = nx.CreateSnapshot()
 		if err != nil {
-			log.Printf("failed to snapshot Nextcloud: %s\n", err)
+			log.Printf("failed to snapshot Nextcloud: \n%s\n", err)
 			return
 		}
 
