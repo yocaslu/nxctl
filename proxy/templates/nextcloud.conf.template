@@ -1,0 +1,68 @@
+server {
+	listen ${NGINX_PORT_HTTPS} ssl; # NGINX Port
+	server_name nextcloud.${DOMAIN};
+
+	# File Transfering
+	include /etc/nginx/snippets/file-upload.conf;
+
+	# Recommended SSL Security options
+	include /etc/nginx/snippets/ssl-headers.conf;
+
+    # Including SSL certificates
+    ssl_certificate /etc/letsencrypt/live/nextcloud.${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/nextcloud.${DOMAIN}/privkey.pem;
+
+	location / {
+		proxy_pass http://nextcloud:80;
+
+		# Standard proxy headers
+		include /etc/nginx/snippets/proxy-headers.conf;
+
+		# Activating HSTS (Only HTTPS communications)
+		add_header Strict-Transport-Security "max-age=15552000; includeSubDomains; preload" always;
+
+		# WebSocket support (safe to keep even if not needed)
+		include  /etc/nginx/snippets/websocket-support.conf;
+	}
+
+	# static files
+	location ^~ /browser {
+		proxy_pass http://collabora:${COLLABORA_PORT};
+		proxy_set_header Host $host;
+	}
+
+
+	# WOPI discovery URL
+	location ^~ /hosting/discovery {
+		proxy_pass http://collabora:${COLLABORA_PORT};
+		proxy_set_header Host $host;
+	}
+
+
+	# Capabilities
+	location ^~ /hosting/capabilities {
+		proxy_pass http://collabora:${COLLABORA_PORT};
+		proxy_set_header Host $host;
+	}
+
+
+	# main websocket, download, presentation (legacy svg) and image upload
+	location ^~ /cool/ {
+		proxy_pass http://collabora:${COLLABORA_PORT};
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "Upgrade";
+		proxy_set_header Host $host;
+		proxy_read_timeout 36000s;
+	}
+
+	# Whiteboard WebSocket
+	location /whiteboard/ {
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header Host $host;
+		proxy_pass http://whiteboard:${WHITEBOARD_PORT}/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "upgrade";
+	}
+}

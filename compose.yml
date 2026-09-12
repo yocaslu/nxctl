@@ -1,0 +1,147 @@
+networks:
+    nextcloud:
+    postgres:
+    proxy:
+
+volumes:
+    config:
+    database:
+
+services:
+    nginx:
+        image: nginx
+        container_name: nginx
+        restart: unless-stopped
+        networks:
+            - proxy
+        volumes:
+            - "./proxy/templates:/etc/nginx/templates"
+            - "./proxy/snippets:/etc/nginx/snippets"
+            - "/etc/letsencrypt:/etc/letsencrypt:ro"
+        ports:
+            - ${NGINX_PORT_HTTP}:${NGINX_PORT_HTTP}
+            - ${NGINX_PORT_HTTPS}:${NGINX_PORT_HTTPS}
+        environment:
+            NGINX_PORT_HTTP: ${NGINX_PORT_HTTP}
+            NGINX_PORT_HTTPS: ${NGINX_PORT_HTTPS}
+            DOMAIN: ${DOMAIN}
+            COLLABORA_PORT: ${COLLABORA_PORT}
+            WHITEBOARD_PORT: ${WHITEBOARD_PORT}
+
+    redis:
+        image: redis:${REDIS_TAG}
+        container_name: redis
+        restart: unless-stopped
+        networks:
+            - nextcloud
+
+    postgres:
+        image: postgres:${POSTGRES_TAG}
+        container_name: ${POSTGRES_CONTAINER_NAME}
+        restart: unless-stopped
+        networks:
+            - postgres
+        ports:
+            - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+        volumes:
+            - "${POSTGRES_VOLUME_NAME}:/var/lib/postgresql/"
+            - "${BACKUP_PATH}:/mnt/backup"
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+
+    pgadmin:
+        image: dpage/pgadmin4
+        container_name: pgadmin4
+        restart: unless-stopped
+        networks:
+            - postgres
+            - proxy
+        ports:
+            - "${PGADMIN_EXPORTED_PORT}:80"
+        environment:
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_USER: ${PGADMIN_DEFAULT_USER}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+            PGADMIN_LISTEN_ADDRESS: ${PGADMIN_LISTEN_ADDRESS}
+            PGADMIN_LISTEN_PORT: ${PGADMIN_LISTEN_PORT}
+
+    cronjobs:
+        image: mcuadros/ofelia:latest
+        container_name: cronjobs
+        restart: unless-stopped
+        command: "daemon --docker"
+        depends_on:
+            - nextcloud
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    nextcloud:
+        image: nextcloud:${NEXTCLOUD_TAG}
+        container_name: ${NEXTCLOUD_CONTAINER_NAME}
+        restart: unless-stopped
+        networks:
+            - postgres
+            - proxy
+            - nextcloud
+        ports:
+            - "${NEXTCLOUD_PORT}:80"
+        volumes:
+            - "config:/var/www/html/"
+            - "${NEXTCLOUD_DATA_DIR}:/var/www/html/data"
+        labels:
+            ofelia.enabled: "true"
+            ofelia.job-exec.nextcloud.schedule: "@every 5m"
+            ofelia.job-exec.nextcloud.command: "runuser -u www-data -- /usr/local/bin/php -f /var/www/html/cron.php"
+        environment:
+            LANG: ${LANG}
+            LANGUAGE: ${LANGUAGE}
+            LC_ALL: ${LC_ALL}
+            NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS}
+            PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT}
+            PHP_UPLOAD_LIMIT: ${PHP_UPLOAD_LIMIT}
+            TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+            # OVERWRITEPROTOCOL: ${OVERWRITEPROTOCOL}
+            OVERWRITECLIURL: ${OVERWRITECLIURL}
+            POSTGRES_HOST: ${POSTGRES_HOST}
+            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+
+    collabora:
+        image: collabora/code:${COLLABORA_TAG}
+        container_name: collabora
+        restart: unless-stopped
+        depends_on:
+            - nextcloud
+        ports:
+            - "${COLLABORA_PORT}:9980"
+        networks:
+            - proxy
+            - nextcloud
+        cap_add:
+            - MKNOD
+            - SYS_CHROOT
+        environment:
+            username: ${COLLABORA_USERNAME}
+            password: ${COLLABORA_PASSWORD}
+            extra_params: ${COLLABORA_EXTRA_PARAMS}
+
+    whiteboard:
+        image: ghcr.io/nextcloud-releases/whiteboard:${WHITEBOARD_TAG}
+        container_name: whiteboard
+        restart: unless-stopped
+        depends_on:
+            - nextcloud
+        networks:
+            - nextcloud
+            - proxy
+        ports:
+            - "${WHITEBOARD_PORT}:3002"
+        environment:
+            NEXTCLOUD_URL: ${OVERWRITECLIURL}
+            JWT_SECRET_KEY: ${WHITEBOARD_JWT_SECRET_KEY}
+            STORAGE_STRATEGY: "lru"
