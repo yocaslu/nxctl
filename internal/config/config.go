@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"nxctl/internal/utils"
 	"os"
 	"path"
@@ -14,25 +13,37 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	date := utils.GetDate()
 	backup_path := os.Getenv("BACKUP_PATH")
 	if backup_path == "" {
 		return nil, fmt.Errorf("BACKUP_PATH is missing!")
 	}
 
-	date := utils.GetDate()
+	// Creating dedicated backup directory based on date
+	backup_path = path.Join(backup_path, "nextcloud_backup-"+date)
+
+	exist, err := utils.DirExist(backup_path)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err)
+	}
+
+	if !exist {
+		err = createBackupDir(backup_path)
+		if err != nil {
+			return nil, fmt.Errorf("%s", err)
+		}
+	}
+
 	return &Config{
 		Date:       date,
 		BackupPath: backup_path,
 	}, nil
 }
 
-func (c *Config) CreateBackupDir() error {
-	log.Printf("Creating backup directory: %s\n", c.BackupPath)
-	err := os.Mkdir(path.Join(c.BackupPath, utils.GetDate()), 0775)
-
+func createBackupDir(backup_path string) error {
+	err := os.Mkdir(backup_path, 0775)
 	if err != nil {
-		log.Printf("failed to create backup directory: %s\n", err)
-		return err
+		return fmt.Errorf("%s", err)
 	}
 
 	return nil

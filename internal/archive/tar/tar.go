@@ -2,7 +2,6 @@ package targz
 
 import (
 	"fmt"
-	"log"
 	"nxctl/internal/proc"
 	"os"
 )
@@ -21,11 +20,9 @@ func New(dest string, source string) *Tar {
 }
 
 func (t *Tar) Compress() error {
-	stdout, stderr := proc.Run(os.Environ(), "tar", "-czpf", t.Dest, t.Source)
+	_, stderr := proc.Run(os.Environ(), "tar", "-czpf", t.Dest, t.Source)
 	if stderr != nil {
-		return fmt.Errorf("Failed to compact due to: %s\n", stderr)
-	} else {
-		log.Println(stdout)
+		return fmt.Errorf("%s", stderr)
 	}
 
 	return nil

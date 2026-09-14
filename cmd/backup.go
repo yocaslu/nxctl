@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"nxctl/internal/config"
 	"nxctl/internal/docker/nextcloud"
 	"nxctl/internal/docker/postgres"
@@ -15,37 +15,44 @@ var backupCmd = &cobra.Command{
 	Long:  "Backup user files and Nextcloud Docker volume and dump database",
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: create full backup of nextcloud using tar, compress using xz?
+		fmt.Println("Loading Nextcloud environment variables")
 		nx, err := nextcloud.Load()
 		if err != nil {
-			log.Printf("failed to load Nextcloud informations: %s\n", err)
+			fmt.Printf("Failed to load Nextcloud environment variables:\n%s\n", err)
 			return
 		}
 
+		fmt.Println("Loading nxctl environment variables")
 		cfg, err := config.Load()
 		if err != nil {
-			log.Printf("failed to load config: %s\n", err)
+			fmt.Printf("failed to load config environment variables:\n%s\n", err)
 			return
 		}
 
+		fmt.Println("Loading database environment variables")
 		db, err := postgres.Load()
 		if err != nil {
-			log.Printf("failed to load database informations: %s\n", err)
+			fmt.Printf("Failed to load PostgreSQL environment variables:\n%s\n", err)
 			return
 		}
 
+		fmt.Println("Enabling Nextcloud maintenance mode")
 		nx.SetMaintenanceMode(true)
 
+		fmt.Println("Dumping database...")
 		err = db.Dump(cfg.BackupPath)
 		if err != nil {
-			log.Printf("failed to dump database: %s\n", err)
+			fmt.Printf("Failed to dump database:\n%s\n", err)
 		}
 
+		fmt.Println("Creating Nextcloud backup")
 		err = nx.Backup(cfg.BackupPath)
 		if err != nil {
-			log.Printf("failed to backup Nextcloud: %s\n", err)
+			fmt.Printf("Failed to backup Nextcloud:\n%s\n", err)
 			return
 		}
 
+		fmt.Println("Disabling Nextcloud maintenance mode")
 		defer nx.SetMaintenanceMode(false)
 	},
 }
