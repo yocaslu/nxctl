@@ -51,7 +51,7 @@ func (nx *Nextcloud) SetMaintenanceMode(flag bool) error {
 
 	_, err := proc.Run(os.Environ(), "docker", "exec", "-u", "www-data", nx.ContainerName, "php", "occ", "maintenance:mode", mode)
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	return nil
@@ -61,7 +61,7 @@ func (nx *Nextcloud) CreateSnapshot() error {
 
 	restic, err := restic.Load()
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	targetPaths := []string{
@@ -73,7 +73,7 @@ func (nx *Nextcloud) CreateSnapshot() error {
 	for _, target := range targetPaths {
 		err := restic.CreateSnapshot(target)
 		if err != nil {
-			return fmt.Errorf("%s\n", err)
+			return fmt.Errorf("%s", err)
 		}
 	}
 
@@ -104,7 +104,7 @@ func (nx *Nextcloud) Backup(backup_path string) error {
 	for _, target := range targets {
 		err := target.Compress()
 		if err != nil {
-			return fmt.Errorf("%s\n", err)
+			return fmt.Errorf("%s", err)
 		}
 	}
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"nxctl/cmd"
 
 	"github.com/joho/godotenv"
@@ -10,7 +10,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Failed to load .env variables: %s\n", err)
+		fmt.Printf("Failed to load .env variables: %s\n", err)
 	}
 
 	cmd.Execute()

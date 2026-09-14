@@ -24,13 +24,13 @@ func Load() (*Config, error) {
 
 	exist, err := utils.DirExist(backup_path)
 	if err != nil {
-		return nil, fmt.Errorf("%s\n", err)
+		return nil, fmt.Errorf("%s", err)
 	}
 
 	if !exist {
 		err = createBackupDir(backup_path)
 		if err != nil {
-			return nil, fmt.Errorf("%s\n", err)
+			return nil, fmt.Errorf("%s", err)
 		}
 	}
 
@@ -43,7 +43,7 @@ func Load() (*Config, error) {
 func createBackupDir(backup_path string) error {
 	err := os.Mkdir(backup_path, 0775)
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	return nil

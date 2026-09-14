@@ -60,7 +60,7 @@ func (d *PgDump) CreateDumpDir() error {
 	if !exist {
 		err = os.Mkdir(d.Directory, 0775)
 		if err != nil {
-			return fmt.Errorf("%s\n", err)
+			return fmt.Errorf("%s", err)
 		}
 	}
 
@@ -77,13 +77,13 @@ func (p *Postgres) Dump(backup_path string) error {
 
 	exist, err := utils.DirExist(dump.Directory)
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	if !exist {
 		err = dump.CreateDumpDir()
 		if err != nil {
-			return fmt.Errorf("%s\n", err)
+			return fmt.Errorf("%s", err)
 		}
 	}
 
@@ -96,7 +96,7 @@ func (p *Postgres) Dump(backup_path string) error {
 
 	_, err = proc.Run(os.Environ(), "docker", args...)
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	return nil

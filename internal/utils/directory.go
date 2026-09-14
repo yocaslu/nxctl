@@ -14,7 +14,7 @@ func DirExist(path string) (bool, error) {
 		}
 
 		// Handle other potential errors here (e.g., permission denied)
-		return false, fmt.Errorf("%s\n", err)
+		return false, fmt.Errorf("%s", err)
 	}
 
 	return true, nil // Returns true if it is a directory, false if it's a file

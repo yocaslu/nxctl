@@ -17,11 +17,11 @@ func Run(_env []string, command string, args ...string) (string, error) {
 	cmd.Stdout = &stdout
 
 	if err := cmd.Start(); err != nil {
-		return stdout.String(), fmt.Errorf("%s\n", stderr.String())
+		return stdout.String(), fmt.Errorf("%s", stderr.String())
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return stdout.String(), fmt.Errorf("%s\n", stderr.String())
+		return stdout.String(), fmt.Errorf("%s", stderr.String())
 	}
 
 	return stdout.String(), nil

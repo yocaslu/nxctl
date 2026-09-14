@@ -22,7 +22,7 @@ func New(dest string, source string) *Tar {
 func (t *Tar) Compress() error {
 	_, stderr := proc.Run(os.Environ(), "tar", "-czpf", t.Dest, t.Source)
 	if stderr != nil {
-		return fmt.Errorf("%s\n", stderr)
+		return fmt.Errorf("%s", stderr)
 	}
 
 	return nil

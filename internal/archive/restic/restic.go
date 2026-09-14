@@ -50,7 +50,7 @@ func (r *Restic) CreateRepo() error {
 
 	stdout, err := proc.Run(os.Environ(), "restic", "-r", r.Repo, "init")
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	slog.Debug(stdout)
@@ -62,13 +62,13 @@ func (r *Restic) CreateSnapshot(target string) error {
 	if !exist {
 		err := r.CreateRepo()
 		if err != nil {
-			return fmt.Errorf("%s\n", err)
+			return fmt.Errorf("%s", err)
 		}
 	}
 
 	_, err := proc.Run(r._env, "restic", "-r", r.Repo, "backup", target)
 	if err != nil {
-		return fmt.Errorf("%s\n", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	return nil

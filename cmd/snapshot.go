@@ -18,21 +18,21 @@ var snapshotCmd = &cobra.Command{
 		fmt.Println("Loading Nextcloud environment variables")
 		nx, err := nextcloud.Load()
 		if err != nil {
-			log.Printf("Failed to load Nextcloud environment variables: %s\n", err)
+			log.Printf("Failed to load Nextcloud environment variables:\n%s\n", err)
 			return
 		}
 
 		fmt.Println("Loading nxctl environment variables")
 		cfg, err := config.Load()
 		if err != nil {
-			log.Printf("Failed to load config environment variables: %s\n", err)
+			log.Printf("Failed to load config environment variables:\n%s\n", err)
 			return
 		}
 
 		fmt.Println("Loading database environment variables")
 		db, err := postgres.Load()
 		if err != nil {
-			log.Printf("Failed to load database environment variables: %s\n", err)
+			log.Printf("Failed to load database environment variables:\n%s\n", err)
 			return
 		}
 
@@ -42,13 +42,13 @@ var snapshotCmd = &cobra.Command{
 		fmt.Println("Dumping database")
 		err = db.Dump(cfg.BackupPath)
 		if err != nil {
-			log.Printf("Failed to dump database: %s\n", err)
+			log.Printf("Failed to dump database:\n%s\n", err)
 		}
 
 		fmt.Println("Creating Nextcloud snapshot")
 		err = nx.CreateSnapshot()
 		if err != nil {
-			log.Printf("Failed to snapshot Nextcloud: %s\n", err)
+			log.Printf("Failed to snapshot Nextcloud:\n%s\n", err)
 			return
 		}
 
