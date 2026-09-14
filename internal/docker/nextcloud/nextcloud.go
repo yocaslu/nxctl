@@ -2,7 +2,6 @@ package nextcloud
 
 import (
 	"fmt"
-	"log"
 	"nxctl/internal/archive/restic"
 	targz "nxctl/internal/archive/tar"
 	"nxctl/internal/docker"
@@ -45,16 +44,14 @@ func Load() (*Nextcloud, error) {
 
 func (nx *Nextcloud) SetMaintenanceMode(flag bool) error {
 
-	var mode string
+	var mode string = "--off"
 	if flag {
 		mode = "--on"
-	} else {
-		mode = "--off"
 	}
 
 	_, err := proc.Run(os.Environ(), "docker", "exec", "-u", "www-data", nx.ContainerName, "php", "occ", "maintenance:mode", mode)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s\n", err)
 	}
 
 	return nil
@@ -64,8 +61,7 @@ func (nx *Nextcloud) CreateSnapshot() error {
 
 	restic, err := restic.Load()
 	if err != nil {
-		log.Printf("failed to create Restic instance:\n%s\n", err)
-		return err
+		return fmt.Errorf("%s\n", err)
 	}
 
 	targetPaths := []string{
@@ -74,12 +70,10 @@ func (nx *Nextcloud) CreateSnapshot() error {
 	}
 
 	// TODO: Use Goroutines!
-	for index, target := range targetPaths {
-		log.Printf("Restic: [%d of %d] Backing up %s.\n", index+1, len(targetPaths), target)
+	for _, target := range targetPaths {
 		err := restic.CreateSnapshot(target)
 		if err != nil {
-			log.Printf("Failed to backup %s:\n%s\n", target, err)
-			return err
+			return fmt.Errorf("%s\n", err)
 		}
 	}
 
@@ -107,12 +101,10 @@ func (nx *Nextcloud) Backup(backup_path string) error {
 	}
 
 	// TODO: Use Goroutines!
-	for index, target := range targets {
-		log.Printf("Tar: [%d of %d] Backing up %s.\n", index+1, len(targets), target)
+	for _, target := range targets {
 		err := target.Compress()
 		if err != nil {
-			log.Printf("Failed to backup %s:\n%s\n", target, err)
-			return err
+			return fmt.Errorf("%s\n", err)
 		}
 	}
 

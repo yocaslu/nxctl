@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"fmt"
-	"log"
 	"nxctl/internal/proc"
 	"nxctl/internal/utils"
 	"os"
@@ -55,15 +54,13 @@ func Load() (*Postgres, error) {
 func (d *PgDump) CreateDumpDir() error {
 	exist, err := utils.DirExist(d.Directory)
 	if err != nil {
-		log.Printf("failed to create PostgreSQL dump directory: %s\n", err)
 		return err
 	}
 
 	if !exist {
 		err = os.Mkdir(d.Directory, 0775)
 		if err != nil {
-			log.Printf("failed to create PostgreSQL dump directory: %s\n", err)
-			return err
+			return fmt.Errorf("%s\n", err)
 		}
 	}
 
@@ -71,7 +68,6 @@ func (d *PgDump) CreateDumpDir() error {
 }
 
 func (p *Postgres) Dump(backup_path string) error {
-
 	dump := PgDump{
 		Directory: path.Join(backup_path, "postgresql"),
 		Filename:  "nextcloud_pgdump-",
@@ -81,13 +77,13 @@ func (p *Postgres) Dump(backup_path string) error {
 
 	exist, err := utils.DirExist(dump.Directory)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s\n", err)
 	}
 
 	if !exist {
 		err = dump.CreateDumpDir()
 		if err != nil {
-			return err
+			return fmt.Errorf("%s\n", err)
 		}
 	}
 
@@ -100,8 +96,7 @@ func (p *Postgres) Dump(backup_path string) error {
 
 	_, err = proc.Run(os.Environ(), "docker", args...)
 	if err != nil {
-		log.Printf("Failed to dump PostgreSQL %s database due to: %s", p.DatabaseName, err)
-		return err
+		return fmt.Errorf("%s\n", err)
 	}
 
 	return nil

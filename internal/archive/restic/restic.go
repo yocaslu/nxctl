@@ -2,7 +2,7 @@ package restic
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"nxctl/internal/proc"
 	"nxctl/internal/utils"
 	"os"
@@ -48,14 +48,12 @@ func (r *Restic) CreateRepo() error {
 		return nil
 	}
 
-	log.Printf("creating restic repository in %s\n", r.Repo)
 	stdout, err := proc.Run(os.Environ(), "restic", "-r", r.Repo, "init")
 	if err != nil {
-		log.Printf("failed to create restic repository in %s:\n%s\n", r.Repo, err)
-		return err
+		return fmt.Errorf("%s\n", err)
 	}
 
-	log.Println(stdout)
+	slog.Debug(stdout)
 	return nil
 }
 
@@ -64,16 +62,14 @@ func (r *Restic) CreateSnapshot(target string) error {
 	if !exist {
 		err := r.CreateRepo()
 		if err != nil {
-			return err
+			return fmt.Errorf("%s\n", err)
 		}
 	}
 
-	stdout, err := proc.Run(r._env, "restic", "-r", r.Repo, "backup", target)
+	_, err := proc.Run(r._env, "restic", "-r", r.Repo, "backup", target)
 	if err != nil {
-		log.Printf("failed to snapshot %s:\n%s\n", target, err)
-		return err
+		return fmt.Errorf("%s\n", err)
 	}
 
-	log.Println(stdout)
 	return nil
 }
