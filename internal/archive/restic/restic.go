@@ -9,9 +9,15 @@ import (
 )
 
 type Restic struct {
-	Repo     string
+	Repo     string `json:"repo"`
 	Password string
 	_env     []string
+}
+
+func (r *Restic) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("repo", r.Repo),
+	)
 }
 
 func New(repo string, password string) *Restic {

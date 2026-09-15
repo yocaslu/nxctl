@@ -2,13 +2,21 @@ package targz
 
 import (
 	"fmt"
+	"log/slog"
 	"nxctl/internal/proc"
 	"os"
 )
 
 type Tar struct {
-	Dest   string
-	Source string
+	Dest   string `json:"dest"`
+	Source string `json:"source"`
+}
+
+func (t *Tar) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("dest", t.Dest),
+		slog.String("source", t.Source),
+	)
 }
 
 func New(dest string, source string) *Tar {

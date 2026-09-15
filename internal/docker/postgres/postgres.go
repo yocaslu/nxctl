@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"log/slog"
 	"nxctl/internal/proc"
 	"nxctl/internal/utils"
 	"os"
@@ -9,17 +10,35 @@ import (
 )
 
 type Postgres struct {
-	UserName      string
-	Password      string
-	DatabaseName  string
-	ContainerName string
+	UserName      string `json:"username"`
+	Password      string `json:"password"`
+	DatabaseName  string `json:"database_name"`
+	ContainerName string `json:"container_name"`
+}
+
+func (p *Postgres) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("username", p.UserName),
+		slog.String("password", "CENSURED"),
+		slog.String("database_name", p.UserName),
+		slog.String("container_name", p.ContainerName),
+	)
 }
 
 type PgDump struct {
-	Directory string
-	Filename  string
-	Extension string
-	Date      string
+	Directory string `json:"directory"`
+	Filename  string `json:"filename"`
+	Extension string `json:"extension"`
+	Date      string `json:"date"`
+}
+
+func (p *PgDump) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("username", p.Directory),
+		slog.String("filename", p.Filename),
+		slog.String("extension", p.Extension),
+		slog.String("date", p.Date),
+	)
 }
 
 func Load() (*Postgres, error) {

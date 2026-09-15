@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"nxctl/internal/config"
 	"nxctl/internal/docker/nextcloud"
 	"nxctl/internal/docker/postgres"
+	"nxctl/internal/nxlog"
 
 	"github.com/spf13/cobra"
 )
 
+var backlog *slog.Logger = nxlog.ForModule("backup")
 var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "backup Nextcloud volume, storage and database",

@@ -6,6 +6,7 @@ import (
 	"nxctl/internal/config"
 	"nxctl/internal/docker/nextcloud"
 	"nxctl/internal/docker/postgres"
+	"nxctl/internal/nxlog"
 
 	"github.com/spf13/cobra"
 )
@@ -15,6 +16,8 @@ var snapshotCmd = &cobra.Command{
 	Long:  "Use restic to create a snapshot of Nextcloud, volume, storage and database",
 	Short: "Snapshot Nextcloud user files, volume, storage and database.",
 	Run: func(cmd *cobra.Command, args []string) {
+		logger := nxlog.ForModule("snapshot")
+
 		fmt.Println("Loading Nextcloud environment variables")
 		nx, err := nextcloud.Load()
 		if err != nil {

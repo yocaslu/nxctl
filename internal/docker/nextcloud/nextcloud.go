@@ -2,6 +2,7 @@ package nextcloud
 
 import (
 	"fmt"
+	"log/slog"
 	"nxctl/internal/archive/restic"
 	targz "nxctl/internal/archive/tar"
 	"nxctl/internal/docker"
@@ -12,10 +13,19 @@ import (
 )
 
 type Nextcloud struct {
-	ContainerName   string // nome do container docker em execucao
-	VolumePath      string // armazenamento da instalacao do nextcloud
-	DataDir         string // armazenamento dos usuarios
-	MaintenanceMode bool
+	ContainerName   string `json:"container_name"` // nome do container docker em execucao
+	VolumePath      string `json:"volume_path"` // armazenamento da instalacao do nextcloud
+	DataDir         string `json:"data_dir"` // armazenamento dos usuarios
+	MaintenanceMode bool `json:"maintenance_mode"`
+}
+
+func (nx *Nextcloud) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("container_name", nx.ContainerName),
+		slog.String("volume_path", nx.VolumePath),
+		slog.String("data_dir", nx.DataDir),
+		slog.Bool("maintenance_mode", nx.MaintenanceMode),
+	)
 }
 
 func Load() (*Nextcloud, error) {
