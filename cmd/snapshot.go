@@ -15,9 +15,10 @@ var snapshotCmd = &cobra.Command{
 	Use:   "snapshot",
 	Long:  "Use restic to create a snapshot of Nextcloud, volume, storage and database",
 	Short: "Snapshot Nextcloud user files, volume, storage and database.",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		nxlog.InitLogger(debug)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := nxlog.ForModule("snapshot")
-
 		fmt.Println("Loading Nextcloud environment variables")
 		nx, err := nextcloud.Load()
 		if err != nil {
@@ -62,4 +63,5 @@ var snapshotCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(snapshotCmd)
+	snapshotCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug information")
 }
