@@ -35,25 +35,15 @@ func New(repo string, password string) *Restic {
 
 func Load() (*Restic, error) {
 	logger := nxlog.ForModule(MODULE_NAME + ".Load")
-	logger.Info("Creating Restic object")
+	logger.Debug("Creating Restic object")
 
 	repo := os.Getenv("RESTIC_REPOSITORY")
 	if repo == "" {
-		logger.Error(
-			"Failed to find RESTIC_REPOSITORY environment variable",
-			slog.Any("env", os.Environ()),
-		)
-
 		return nil, fmt.Errorf("RESTIC_REPOSITORY is missing!")
 	}
 
 	password := os.Getenv("RESTIC_PASSWORD")
 	if password == "" {
-		logger.Error(
-			"Failed to find RESTIC_PASSWORD environment variable",
-			slog.Any("env", os.Environ()),
-		)
-
 		return nil, fmt.Errorf("RESTIC_PASSWORD is missing!")
 	}
 
@@ -63,7 +53,7 @@ func Load() (*Restic, error) {
 		_env:     os.Environ(),
 	}
 
-	logger.Info("Restic object created", slog.Any("restic", r))
+	logger.Debug("Restic object created", slog.Any("restic", r))
 	return r, nil
 }
 
@@ -75,17 +65,11 @@ func (r *Restic) CreateRepo() error {
 		return nil
 	}
 
-	logger.Info("Creating repository", slog.Any("restic", r))
+	logger.Debug("Creating repository", slog.Any("restic", r))
 	stdout, err := proc.Run(os.Environ(), "restic", "-r", r.Repo, "init")
 
 	if err != nil {
-		logger.Error(
-			"Failed to create repository",
-			slog.Any("restic", r),
-			slog.String("error", err.Error()),
-		)
-
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to create repository: %s", err)
 	}
 
 	slog.Debug(stdout)
@@ -97,28 +81,17 @@ func (r *Restic) CreateSnapshot(target string) error {
 	exist, _ := utils.DirExist(r.Repo)
 
 	if !exist {
-		logger.Warn("Repository directory not found, creating it.")
 		err := r.CreateRepo()
 
 		if err != nil {
-			logger.Error(
-				"Failed to create repository",
-				slog.Any("restic", r),
-			)
-
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("Failed to create repository: %s", err)
 		}
 	}
 
-	logger.Info("Creating snapshot")
+	logger.Debug("Creating snapshot")
 	_, err := proc.Run(r._env, "restic", "-r", r.Repo, "backup", target)
 	if err != nil {
-		logger.Error(
-			"Failed to create snapshot",
-			slog.Any("restic", r),
-		)
-
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to create snapshot: %s", err)
 	}
 
 	return nil

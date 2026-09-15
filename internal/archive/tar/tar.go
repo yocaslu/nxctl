@@ -30,7 +30,7 @@ func New(dest string, source string) *Tar {
 		Source: source,
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Created Tar object",
 		slog.Any("Tar", t),
 	)
@@ -40,19 +40,14 @@ func New(dest string, source string) *Tar {
 
 func (t *Tar) Compress() error {
 	logger := nxlog.ForModule(MODULE_NAME + ".Compress")
-	logger.Info(
+	logger.Debug(
 		"Starting Tar compress",
 		slog.Any("Tar", t),
 	)
 
 	_, stderr := proc.Run(os.Environ(), "tar", "-czpf", t.Dest, t.Source)
 	if stderr != nil {
-		logger.Error(
-			"Failed to compress",
-			slog.Any("Tar", t),
-		)
-
-		return fmt.Errorf("%s", stderr)
+		return fmt.Errorf("Failed to compress: %s", stderr)
 	}
 
 	return nil

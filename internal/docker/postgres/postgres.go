@@ -47,40 +47,24 @@ func (p *PgDump) LogValue() slog.Value {
 func Load() (*Postgres, error) {
 	logger := nxlog.ForModule(MODULE_NAME + ".Load")
 
-	logger.Info("Reading PostgreSQL environment variables")
+	logger.Debug("Reading PostgreSQL environment variables")
 	username := os.Getenv("POSTGRES_USER")
 	if username == "" {
-		logger.Error(
-			"Failed to read POSTGRES_CONTAINER_NAME",
-			slog.Any("env", os.Environ()),
-		)
 		return nil, fmt.Errorf("POSTGRES_USER is missing!")
 	}
 
 	password := os.Getenv("POSTGRES_PASSWORD")
 	if password == "" {
-		logger.Error(
-			"Failed to read POSTGRES_CONTAINER_NAME",
-			slog.Any("env", os.Environ()),
-		)
 		return nil, fmt.Errorf("POSTGRES_PASSWORD is missing!")
 	}
 
 	database := os.Getenv("POSTGRES_DB")
 	if database == "" {
-		logger.Error(
-			"Failed to read POSTGRES_CONTAINER_NAME",
-			slog.Any("env", os.Environ()),
-		)
 		return nil, fmt.Errorf("POSTGRES_DB is missing!")
 	}
 
 	container := os.Getenv("POSTGRES_CONTAINER_NAME")
 	if container == "" {
-		logger.Error(
-			"Failed to read POSTGRES_CONTAINER_NAME",
-			slog.Any("env", os.Environ()),
-		)
 		return nil, fmt.Errorf("POSTGRES_CONTAINER_NAME is missing!")
 	}
 
@@ -91,7 +75,7 @@ func Load() (*Postgres, error) {
 		ContainerName: container,
 	}
 
-	logger.Info(
+	logger.Debug(
 		"PostgreSQL informations :were successfully read",
 		slog.Any("postgres_data", pg),
 	)
@@ -102,14 +86,14 @@ func Load() (*Postgres, error) {
 func (d *PgDump) CreateDumpDir() error {
 	logger := nxlog.ForModule(MODULE_NAME + ".CreateDumpDir")
 
-	logger.Info(
+	logger.Debug(
 		"Checking if database dump directory exists",
 		slog.Any("pgdump", d),
 	)
 
 	exist, err := utils.DirExist(d.Directory)
 	if err != nil {
-		logger.Info(
+		logger.Debug(
 			"Failed to check if database dump directory exist",
 			slog.Any("pgdump", d),
 			slog.String("error", err.Error()),
@@ -118,18 +102,13 @@ func (d *PgDump) CreateDumpDir() error {
 	}
 
 	if !exist {
-		logger.Info("Creating database dump directory")
+		logger.Debug("Creating database dump directory")
 		err = os.Mkdir(d.Directory, 0775)
 		if err != nil {
-			logger.Error(
-				"Failed to create database dump directory",
-				slog.Any("pgdump", d),
-				slog.String("error", err.Error()),
-			)
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("Failed to create database dump directory: %s", err)
 		}
 
-		logger.Info("Database dump directory successfully created")
+		logger.Debug("Database dump directory successfully created")
 	}
 
 	return nil
@@ -145,19 +124,19 @@ func (p *Postgres) Dump(backup_path string) error {
 		Date:      utils.GetDate(),
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Created PgDump struct",
 		slog.Any("pgdump", dump),
 	)
 
-	logger.Info(
+	logger.Debug(
 		"Checking if database dump directory exists",
 		slog.Any("pgdump", dump),
 	)
 
 	exist, err := utils.DirExist(dump.Directory)
 	if err != nil {
-		logger.Info(
+		logger.Debug(
 			"Failed to check if database dump directory exist",
 			slog.Any("pgdump", dump),
 			slog.String("error", err.Error()),
@@ -168,7 +147,7 @@ func (p *Postgres) Dump(backup_path string) error {
 	if !exist {
 		err = dump.CreateDumpDir()
 		if err != nil {
-			logger.Info(
+			logger.Debug(
 				"Failed to create database dump directory",
 				slog.Any("pgdump", dump),
 				slog.String("error", err.Error()),
@@ -184,15 +163,10 @@ func (p *Postgres) Dump(backup_path string) error {
 		"-f", path.Join(dump.Directory, dump.Filename+dump.Date+dump.Extension),
 	}
 
-	logger.Info("Dumping database")
+	logger.Debug("Dumping database")
 	_, err = proc.Run(os.Environ(), "docker", args...)
 	if err != nil {
-		logger.Error(
-			"Failed to dump database",
-			slog.String("error", err.Error()),
-			slog.Any("postgres_data", p),
-		)
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to dump database: %s", err)
 	}
 
 	return nil

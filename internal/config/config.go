@@ -29,11 +29,6 @@ func Load() (*Config, error) {
 	backup_path := os.Getenv("BACKUP_PATH")
 
 	if backup_path == "" {
-		logger.Error(
-			"Failed to read BACKUP_PATH environment variable",
-			slog.Any("env", os.Environ()),
-		)
-
 		return nil, fmt.Errorf("BACKUP_PATH is missing!")
 	}
 
@@ -42,17 +37,11 @@ func Load() (*Config, error) {
 
 	exist, err := utils.DirExist(backup_path)
 	if err != nil {
-		logger.Error(
-			"Failed to check if backup directory exist",
-			slog.String("backup_path", backup_path),
-			slog.Any("backup_path", backup_path),
-		)
-
-		return nil, fmt.Errorf("%s", err)
+		return nil, fmt.Errorf("Failed to check if backup directory exist: %s", err)
 	}
 
 	if !exist {
-		logger.Info(
+		logger.Debug(
 			"Backup directory does not exist",
 			slog.String("backup_path", backup_path),
 		)
@@ -68,7 +57,7 @@ func Load() (*Config, error) {
 		BackupPath: backup_path,
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Config object created",
 		slog.Any("config", cfg),
 	)
@@ -78,16 +67,11 @@ func Load() (*Config, error) {
 
 func createBackupDir(backup_path string) error {
 	logger := nxlog.ForModule(MODULE_NAME + ".createBackupDir")
-	logger.Info("Creating backup directory")
+	logger.Debug("Creating backup directory")
 	err := os.Mkdir(backup_path, 0775)
 
 	if err != nil {
-		logger.Error(
-			"Failed to create backup directory",
-			slog.String("backup_path", backup_path),
-		)
-
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to create backup directory: %s", err)
 	}
 
 	return nil

@@ -12,19 +12,13 @@ var MODULE_NAME string = "Utils.Directory"
 
 func DirExist(path string) (bool, error) {
 	logger := nxlog.ForModule(MODULE_NAME + ".DirExist")
-	logger.Info(
+	logger.Debug(
 		"Reading directory information",
 		slog.String("path", path),
 	)
 	_, err := os.Stat(path)
 	if err != nil {
-		logger.Error(
-			"Failed to read directory",
-			slog.String("path", path),
-			slog.String("error", err.Error()),
-		)
-
-		logger.Info(
+		logger.Debug(
 			"Checking if path is a directory",
 			slog.String("path", path),
 		)
