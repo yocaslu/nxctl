@@ -2,17 +2,23 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"nxctl/internal/config"
 	"nxctl/internal/docker/nextcloud"
 	"nxctl/internal/docker/postgres"
+	"nxctl/internal/nxlog"
 
 	"github.com/spf13/cobra"
 )
 
+var backlog *slog.Logger = nxlog.ForModule("backup")
 var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "backup Nextcloud volume, storage and database",
 	Long:  "Backup user files and Nextcloud Docker volume and dump database",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		nxlog.InitLogger(debug)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: create full backup of nextcloud using tar, compress using xz?
 		fmt.Println("Loading Nextcloud environment variables")
@@ -59,4 +65,5 @@ var backupCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(backupCmd)
+	backupCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug information")
 }

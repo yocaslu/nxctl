@@ -1,12 +1,11 @@
-package utils
+package nxlog
 
 import (
 	"log/slog"
 	"os"
 )
 
-// global logger
-var glogger *slog.Logger
+var logger *slog.Logger
 
 func InitLogger(debug bool) {
 	var level slog.Level = slog.LevelInfo
@@ -19,16 +18,15 @@ func InitLogger(debug bool) {
 	}
 
 	handler := slog.NewTextHandler(os.Stdout, opts)
-	glogger = slog.New(handler)
-
-	slog.SetDefault(glogger)
+	slog.New(handler)
+	slog.SetDefault(logger)
 }
 
 // LogForModule cria um sub-logger isolado contendo o atributo do módulo correspondente
-func LogForModule(moduleName string) *slog.Logger {
-	if glogger == nil {
+func ForModule(moduleName string) *slog.Logger {
+	if logger == nil {
 		InitLogger(false)
 	}
 
-	return glogger.With("module", moduleName)
+	return logger.With("module", moduleName)
 }
