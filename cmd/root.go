@@ -4,13 +4,14 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"nxctl/internal/nxlog"
+	"nxctl/internal/utils/nxlog"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-var debug bool
+var debug bool = false
+var MODULE_NAME string = "cmd"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

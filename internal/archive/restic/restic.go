@@ -3,9 +3,9 @@ package restic
 import (
 	"fmt"
 	"log/slog"
-	"nxctl/internal/nxlog"
 	"nxctl/internal/proc"
 	"nxctl/internal/utils"
+	"nxctl/internal/utils/nxlog"
 	"os"
 )
 
@@ -69,7 +69,7 @@ func (r *Restic) CreateRepo() error {
 	stdout, err := proc.Run(os.Environ(), "restic", "-r", r.Repo, "init")
 
 	if err != nil {
-		return fmt.Errorf("Failed to create repository: %s", err)
+		return fmt.Errorf("Failed to create repository: [%w]", err)
 	}
 
 	slog.Debug(stdout)
@@ -81,17 +81,21 @@ func (r *Restic) CreateSnapshot(target string) error {
 	exist, _ := utils.DirExist(r.Repo)
 
 	if !exist {
-		err := r.CreateRepo()
+		logger.Debug(
+			"Creating Restic repository",
+			slog.Any("restic", r),
+		)
 
+		err := r.CreateRepo()
 		if err != nil {
-			return fmt.Errorf("Failed to create repository: %s", err)
+			return fmt.Errorf("Failed to create repository: [%w]", err)
 		}
 	}
 
 	logger.Debug("Creating snapshot")
 	_, err := proc.Run(r._env, "restic", "-r", r.Repo, "backup", target)
 	if err != nil {
-		return fmt.Errorf("Failed to create snapshot: %s", err)
+		return fmt.Errorf("Failed to create snapshot: [%w]", err)
 	}
 
 	return nil

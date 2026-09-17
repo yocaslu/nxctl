@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"nxctl/internal/nxlog"
+	"nxctl/internal/utils/nxlog"
 	"os"
+	"path"
 )
 
-var MODULE_NAME string = "Utils.Directory"
+var MODULE_NAME string = "utils.directory"
 
 func DirExist(path string) (bool, error) {
 	logger := nxlog.ForModule(MODULE_NAME + ".DirExist")
@@ -28,8 +29,48 @@ func DirExist(path string) (bool, error) {
 		}
 
 		// Handle other potential errors here (e.g., permission denied)
-		return false, fmt.Errorf("%s", err)
+		return false, err
 	}
 
 	return true, nil // Returns true if it is a directory, false if it's a file
+}
+
+func CreateDir(path string) error {
+	logger := nxlog.ForModule(MODULE_NAME + ".CreateDir")
+
+	err := os.MkdirAll(path, 0775)
+	if err != nil {
+		return fmt.Errorf("Failed to create directory [%s]: %w", path, err)
+	}
+
+	logger.Debug("Created directory",
+		slog.String("path", path),
+	)
+
+	return nil
+}
+
+func CreateDatedPath(pathdir string, dirname string, date string) error {
+	logger := nxlog.ForModule(MODULE_NAME + ".CreatedDatedPath")
+
+	datedPath := path.Join(pathdir, dirname+date)
+	exist, err := DirExist(datedPath)
+	if err != nil {
+		return fmt.Errorf("Failed to check if [%s] exist: %w", datedPath, err)
+	} else if exist {
+		return nil
+	}
+
+	if err := CreateDir(datedPath); err != nil {
+		return fmt.Errorf("Failed to create dated directory [%s]: %w", pathdir, err)
+	}
+
+	logger.Debug(
+		"Created dated path",
+		slog.String("pathdir", pathdir),
+		slog.String("filename", dirname),
+		slog.String("date", date),
+	)
+
+	return nil
 }

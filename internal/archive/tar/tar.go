@@ -3,8 +3,8 @@ package targz
 import (
 	"fmt"
 	"log/slog"
-	"nxctl/internal/nxlog"
 	"nxctl/internal/proc"
+	"nxctl/internal/utils/nxlog"
 	"os"
 )
 
@@ -45,9 +45,9 @@ func (t *Tar) Compress() error {
 		slog.Any("Tar", t),
 	)
 
-	_, stderr := proc.Run(os.Environ(), "tar", "-czpf", t.Dest, t.Source)
-	if stderr != nil {
-		return fmt.Errorf("Failed to compress: %s", stderr)
+	_, err := proc.Run(os.Environ(), "tar", "-czpf", t.Dest, t.Source)
+	if err != nil {
+		return fmt.Errorf("Failed to run Tar command: [%w]", err)
 	}
 
 	return nil
