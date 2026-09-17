@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"nxctl/internal/config"
 	"nxctl/internal/docker/nextcloud"
 	"nxctl/internal/docker/postgres"
-	"nxctl/internal/nxlog"
+	"nxctl/internal/utils/nxlog"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -19,25 +20,26 @@ var snapshotCmd = &cobra.Command{
 		nxlog.InitLogger(debug)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		logger := nxlog.ForModule(MODULE_NAME + ".snapshot")
 		fmt.Println("Loading Nextcloud environment variables")
 		nx, err := nextcloud.Load()
 		if err != nil {
-			log.Printf("Failed to load Nextcloud environment variables:\n%s\n", err)
-			return
+			logger.Error("Failed to load Nextcloud environment variables", slog.Any("error", err))
+			os.Exit(1)
 		}
 
 		fmt.Println("Loading nxctl environment variables")
 		cfg, err := config.Load()
 		if err != nil {
-			log.Printf("Failed to load config environment variables:\n%s\n", err)
-			return
+			logger.Error("Failed to load config environment variables", slog.Any("error", err))
+			os.Exit(1)
 		}
 
 		fmt.Println("Loading database environment variables")
 		db, err := postgres.Load()
 		if err != nil {
-			log.Printf("Failed to load database environment variables:\n%s\n", err)
-			return
+			logger.Error("Failed to load database environment variables", slog.Any("error", err))
+			os.Exit(1)
 		}
 
 		fmt.Println("Enabling Nextcloud maintenance mode")
@@ -46,14 +48,13 @@ var snapshotCmd = &cobra.Command{
 		fmt.Println("Dumping database")
 		err = db.Dump(cfg.BackupPath)
 		if err != nil {
-			log.Printf("Failed to dump database:\n%s\n", err)
+			logger.Error("Failed to dump database", slog.Any("error", err))
 		}
 
 		fmt.Println("Creating Nextcloud snapshot")
 		err = nx.CreateSnapshot()
 		if err != nil {
-			log.Printf("Failed to snapshot Nextcloud:\n%s\n", err)
-			return
+			logger.Error("Failed to snapshot Nextcloud", slog.Any("error", err))
 		}
 
 		fmt.Println("Disabling Nextcloud maintenance mode")

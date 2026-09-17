@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-var logger *slog.Logger
+var Logger *slog.Logger
 
 func InitLogger(debug bool) {
 	var level slog.Level = slog.LevelInfo
@@ -18,15 +18,15 @@ func InitLogger(debug bool) {
 	}
 
 	handler := slog.NewTextHandler(os.Stdout, opts)
-	slog.New(handler)
-	slog.SetDefault(logger)
+	Logger = slog.New(handler)
+	slog.SetDefault(Logger)
 }
 
 // LogForModule cria um sub-logger isolado contendo o atributo do módulo correspondente
 func ForModule(moduleName string) *slog.Logger {
-	if logger == nil {
+	if Logger == nil {
 		InitLogger(false)
 	}
 
-	return logger.With("module", moduleName)
+	return Logger.With("module", moduleName)
 }

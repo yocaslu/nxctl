@@ -6,9 +6,9 @@ import (
 	"nxctl/internal/archive/restic"
 	targz "nxctl/internal/archive/tar"
 	"nxctl/internal/docker"
-	"nxctl/internal/nxlog"
 	"nxctl/internal/proc"
 	"nxctl/internal/utils"
+	"nxctl/internal/utils/nxlog"
 	"os"
 	"path"
 )
@@ -34,32 +34,20 @@ func (nx *Nextcloud) LogValue() slog.Value {
 func Load() (*Nextcloud, error) {
 	logger := nxlog.ForModule(MODULE_NAME + ".Load")
 
-	logger.Info("Reading Nextcloud environment variables")
+	logger.Debug("Reading Nextcloud environment variables")
 	container := os.Getenv("NEXTCLOUD_CONTAINER_NAME")
 	if container == "" {
-		logger.Error(
-			"Failed to read NEXTCLOUD_CONTAINER_NAME environment variable",
-			slog.Any("env", os.Environ()),
-		)
-		return nil, fmt.Errorf("NEXTCLOUD_CONTAINER_NAME is missing!")
+		return nil, fmt.Errorf("Failed to read NEXTCLOUD_CONTAINER_NAME environment variable")
 	}
 
 	volume_name := os.Getenv("NEXTCLOUD_VOLUME_NAME")
 	if volume_name == "" {
-		logger.Error(
-			"Failed to read NEXTCLOUD_VOLUME_NAME environment variable",
-			slog.Any("env", os.Environ()),
-		)
-		return nil, fmt.Errorf("NEXTCLOUD_VOLUME_NAME is missing!")
+		return nil, fmt.Errorf("Failed to read NEXTCLOUD_VOLUME_NAME environment variable")
 	}
 
 	data := os.Getenv("NEXTCLOUD_DATA_DIR")
 	if data == "" {
-		logger.Error(
-			"Failed to read NEXTCLOUD_DATA_DIR environment variable",
-			slog.Any("env", os.Environ()),
-		)
-		return nil, fmt.Errorf("NEXTCLOUD_DATA_DIR is missing!")
+		return nil, fmt.Errorf("Failed to read NEXTCLOUD_DATA_DIR environment variable")
 	}
 
 	var nx *Nextcloud = &Nextcloud{
@@ -69,7 +57,7 @@ func Load() (*Nextcloud, error) {
 		MaintenanceMode: false,
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Nextcloud environment variables were successfully read",
 		slog.Any("nexcloud_data", nx),
 	)
@@ -85,20 +73,14 @@ func (nx *Nextcloud) SetMaintenanceMode(flag bool) error {
 		mode = "--on"
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Switching Nextcloud maintenance mode",
 		slog.Bool("maintenance_mode", flag),
 	)
 
 	_, err := proc.Run(os.Environ(), "docker", "exec", "-u", "www-data", nx.ContainerName, "php", "occ", "maintenance:mode", mode)
 	if err != nil {
-		logger.Error(
-			"Failed to switch maintenance mode",
-			slog.Bool("maintenance_mode", flag),
-			slog.Any("nextcloud_data", nx),
-		)
-
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to change maintenance mode: [%w]", err)
 	}
 
 	return nil
@@ -107,20 +89,14 @@ func (nx *Nextcloud) SetMaintenanceMode(flag bool) error {
 func (nx *Nextcloud) CreateSnapshot() error {
 	logger := nxlog.ForModule(MODULE_NAME + ".CreateSnapshot")
 
-	logger.Info(
+	logger.Debug(
 		"Reading Restic environment variables",
 		slog.Any("nextcloud_data", nx),
 	)
 
 	restic, err := restic.Load()
 	if err != nil {
-		logger.Error(
-			"Failed to read Restic environment variables",
-			slog.Any("nextcloud_data", nx),
-			slog.Any("env", os.Environ()),
-		)
-
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to read Restic environment variables: [%w]", err)
 	}
 
 	targetPaths := []string{
@@ -130,7 +106,7 @@ func (nx *Nextcloud) CreateSnapshot() error {
 
 	// TODO: Use Goroutines!
 	for _, target := range targetPaths {
-		logger.Info(
+		logger.Debug(
 			"Creating snapshot",
 			slog.String("target", target),
 			slog.Any("nextcloud_data", nx),
@@ -138,29 +114,24 @@ func (nx *Nextcloud) CreateSnapshot() error {
 
 		err := restic.CreateSnapshot(target)
 		if err != nil {
-			logger.Error(
-				"Failed to create snapshot",
-				slog.String("target", target),
-				slog.Any("nextcloud_data", nx),
-				slog.Any("env", os.Environ()),
-			)
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("Failed to create snapshot: [%w]", err)
 		}
 	}
 
-	logger.Info("Disabling maintenance mode")
+	logger.Debug("Disabling maintenance mode")
 	defer nx.SetMaintenanceMode(false)
 	return nil
 }
 
 // Create an full backup of everything (volume, database and storage)
-func (nx *Nextcloud) Backup(backup_path string) error {
+func (nx *Nextcloud) CreateBackup(backup_path string) error {
 	logger := nxlog.ForModule(MODULE_NAME + ".Backup")
 
 	type Target struct {
 		Source string
 		Dest   string
 	}
+
 	date := utils.GetDate()
 	targets := []targz.Tar{
 		{
@@ -175,21 +146,15 @@ func (nx *Nextcloud) Backup(backup_path string) error {
 
 	// TODO: Use Goroutines!
 	for _, target := range targets {
-		logger.Info(
-			"Creating snapshot",
+		logger.Debug(
+			"Creating tar.gz backup compressed file",
 			slog.Any("target", target),
 			slog.Any("nextcloud_data", nx),
 		)
 
 		err := target.Compress()
 		if err != nil {
-			logger.Error(
-				"Failed to create snapshot",
-				slog.Any("target", target),
-				slog.Any("nextcloud_data", nx),
-				slog.Any("env", os.Environ()),
-			)
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("Failed to create Nextcloud tar.gz compressed backup file: [%w]", err)
 		}
 	}
 
