@@ -1,0 +1,14 @@
+server {
+	listen 80; # NGINX Port
+	server_name SERVICE_NAME.diolab;
+
+	location / {
+		proxy_pass http://HOST-IP-ADDRESS:SERVICE-PORT;
+		
+		# Standard proxy headers
+	   	include /etc/nginx/snippets/proxy-headers.conf; 
+
+		# WebSocket support (safe to keep even if not needed)
+	   	include /etc/nginx/snippets/websocket-support.conf;
+	}
+}
