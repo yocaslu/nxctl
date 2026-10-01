@@ -22,6 +22,7 @@ var backupCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := nxlog.ForModule(MODULE_NAME + ".backup")
+
 		// TODO: create full backup of nextcloud using tar, compress using xz?
 		fmt.Println("Loading Nextcloud environment variables")
 		nx, err := nextcloud.Load()

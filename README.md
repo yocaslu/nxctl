@@ -1,35 +1,192 @@
-# ☁️ Nextcloud - Docker Compose & Ferramentas de Backup
+# nxctl (Nextcloud Control CLI) 🚀
 
-Este diretório contém as configurações de infraestrutura para implantar o **Nextcloud** via Docker Compose, além de um utilitário customizado para a realização de backups desenvolvido em **Go (Golang)**.
+> Utilitário de linha de comando (CLI) em Go para automação, gerenciamento operacional, snapshots e rotinas de backup de instâncias Nextcloud conteinerizadas via Docker.
 
-## 📁 Estrutura de Arquivos
+---
 
-Abaixo está a descrição dos arquivos contidos neste diretório:
+## 📋 Sumário
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Arquitetura e Recursos](#-arquitetura-e-recursos)
+- [Estrutura do Repositório](#-estrutura-do-repositório)
+- [Pré-requisitos](#-pré-requisitos)
+- [Configuração (.env.example)](#-configuração-envexample)
+- [Instalação e Compilação](#-instalação-e-compilação)
+- [Comandos Principais](#-comandos-principais)
+  - [`nxctl snapshot`](#nxctl-snapshot)
+  - [`nxctl backup`](#nxctl-backup)
+- [Automação e Scripts](#-automação-e-scripts)
+- [Desenvolvimento e Contribuição](#-desenvolvimento-e-contribuição)
+- [Licença](#-licença)
 
-- **`compose.yml`**: Arquivo de definição do Docker Compose responsável por orquestrar os contêineres do Nextcloud e seus serviços dependentes.
-- **`.env`**: Arquivo para definição de variáveis de ambiente confidenciais (como senhas de banco de dados, credenciais e configurações de rede).
-- **`.gitignore`**: Regras para ignorar arquivos locais e sensíveis no controle de versão Git.
-- **`scripts/`**: Diretório que centraliza os scripts de automação e manutenção do serviço.
-    - **`backup.go`**: Script automatizado de backup escrito em Go.
-    - **`go.mod`**: Arquivo que define o módulo Go e gerencia as dependências do script de backup.
+---
 
-## 🚀 Como Iniciar o Serviço
+## 📖 Sobre o Projeto
 
-Antes de iniciar, certifique-se de que o arquivo `.env` está configurado corretamente com as variáveis necessárias.
+O **nxctl** é uma ferramenta desenvolvida em Go projetada para simplificar a administração de ecossistemas Nextcloud em produção ou desenvolvimento local. Ele orquestra ações no container do Nextcloud (habilitando/desabilitando modo de manutenção com `occ`), manipula dumps consistentes no banco PostgreSQL e cria snapshots locais (arquivamento `.tar`) ou backups incrementais/deduplicados com **Restic**.
 
-Para iniciar a stack do Nextcloud em segundo plano, execute:
+---
 
-```bash
-docker compose up -d
+## 🛠 Arquitetura e Recursos
+
+- **Orquestração Docker**: Comunicação direta com a API/CLI do Docker para gerenciar serviços Nextcloud e PostgreSQL.
+- **Segurança e Consistência**: Ativação automática do modo de manutenção do Nextcloud durante operações de cópia para garantir integridade referencial dos dados.
+- **Snapshots Locais Rápidos**: Empacotamento direto do volume de dados/configurações e dump SQL em arquivos comprimidos (`.tar.gz`).
+- **Backups Incrementais com Restic**: Integração nativa para sincronização de repositórios Restic com criptografia, deduplicação e versionamento seguro.
+- **Templates de Proxy Nginx**: Configurações modulares e templates para proxy reverso com suporte a SSL, WebSockets, upload de grandes arquivos, Collabora Office e pgAdmin.
+
+---
+
+## 📂 Estrutura do Repositório
+
+```text
+.
+├── .env.example                # Modelo de variáveis de ambiente do projeto
+├── compose.yml                 # Definição dos containers Docker (Nextcloud, DB, Proxy, etc.)
+├── main.go                     # Ponto de entrada da aplicação Go
+├── cmd/                        # Definições de comandos CLI (Cobra/Viper)
+│   ├── root.go                 # Comando raiz e flags globais
+│   ├── snapshot.go             # Implementação do comando 'snapshot'
+│   └── backup.go               # Implementação do comando 'backup'
+├── internal/                   # Pacotes internos da aplicação
+│   ├── config/                 # Carregamento e parse das configurações (.env / YAML)
+│   ├── archive/                # Módulos de compactação
+│   │   ├── tar/                # Criação e extração de tarballs
+│   │   └── restic/             # Wrapper e chamadas para Restic
+│   ├── docker/                 # Integração Docker
+│   │   ├── nextcloud/          # Comandos específicos do Nextcloud (occ, etc.)
+│   │   └── postgres/           # Rotinas de dump e restore do PostgreSQL
+│   ├── proc/                   # Execução e monitoramento de subprocessos do SO
+│   └── utils/                  # Utilitários (datas, diretórios e logging nxlog)
+├── proxy/                      # Templates e snippets de configuração do Nginx
+│   ├── snippets/               # Headers SSL, Proxy, WebSockets e uploads
+│   └── templates/              # Configurações dinâmicas para Nextcloud, Collabora, pgAdmin
+└── scripts/                    # Scripts complementares para automação (ex: cron jobs)
+    └── backup_semanal.sh       # Script shell para agendamento periódico
 ```
 
-## 📦 Como Executar o Backup
+---
 
-O utilitário de backup foi construído utilizando a linguagem Go. Para executá-lo, você precisará ter o [Go instalado](https://go.dev/) em seu ambiente ou executá-lo de dentro de um contêiner que possua o Go.
+## ⚙️ Pré-requisitos
 
-Para rodar o script de backup manualmente, navegue até a pasta de scripts e execute:
+- **Go**: Versão 1.21 ou superior (para compilação a partir do código-fonte).
+- **Docker & Docker Compose**: Para rodar a stack de containers.
+- **Restic** (opcional/recomendado): Necessário caso utilize o comando `nxctl backup` com repositórios Restic.
+- **Ferramentas padrão UNIX**: `tar`, `gzip`, `bash`.
+
+---
+
+## 🔐 Configuração (`.env.example`)
+
+Antes de executar o **nxctl** ou subir o ambiente via Docker Compose, clone o arquivo de exemplo `.env.example` para `.env` e defina os parâmetros correspondentes ao seu ambiente.
 
 ```bash
-cd scripts
-sudo go run backup.go
+cp .env.example .env
 ```
+
+### Variáveis Críticas de Configuração
+
+| Variável | Descrição | Exemplo |
+| :--- | :--- | :--- |
+| `POSTGRES_DB` | Nome do banco de dados do Nextcloud | `nextcloud` |
+| `POSTGRES_USER` | Usuário do banco de dados | `nc_user` |
+| `POSTGRES_PASSWORD` | Senha segura do banco PostgreSQL | `sua_senha_secreta_aqui` |
+| `NEXTCLOUD_DATA_DIR` | Caminho do volume de dados do Nextcloud no host | `/var/lib/docker/volumes/nextcloud_data/_data` |
+| `SNAPSHOT_OUTPUT_DIR` | Diretório de destino para arquivos de snapshot (`.tar`) | `/var/backups/nextcloud/snapshots` |
+| `RESTIC_REPOSITORY` | Caminho local ou URI remota (S3, B2, SFTP) do Restic | `/var/backups/restic-repo` ou `s3:s3.amazonaws.com/meu-bucket` |
+| `RESTIC_PASSWORD` | Senha mestra de criptografia do repositório Restic | `chave_criptografia_restic` |
+| `NEXTCLOUD_CONTAINER` | Nome do container Nextcloud no Docker Compose | `nextcloud_app` |
+| `POSTGRES_CONTAINER` | Nome do container PostgreSQL no Docker Compose | `nextcloud_db` |
+
+> ⚠️ **Atenção:** Nunca versione o arquivo `.env` com senhas reais no Git. Certifique-se de que ele permaneça listado no `.gitignore`.
+
+---
+
+## 📦 Instalação e Compilação
+
+Para compilar o binário localmente a partir da raiz do repositório:
+
+```bash
+# Baixar dependências
+go mod download
+
+# Compilar o binário nxctl
+go build -o nxctl main.go
+
+# (Opcional) Mover para o PATH do sistema
+sudo mv nxctl /usr/local/bin/
+```
+
+---
+
+## ⚡ Comandos Principais
+
+O CLI disponibiliza comandos dedicados para as estratégias de preservação de dados:
+
+### `nxctl backup`
+
+O comando `backup` cria uma fotografia local, pontual e autocontida do estado atual da instância.
+
+#### Como funciona:
+1. Conecta-se ao container do Nextcloud e aciona o **modo de manutenção** via `occ maintenance:mode --on`.
+2. Executa um dump seguro da base de dados PostgreSQL (`pg_dump`).
+3. Empacota a base exportada junto aos arquivos de configuração e dados essenciais em um arquivo `.tar.gz` datado.
+4. Desativa o modo de manutenção do Nextcloud (`occ maintenance:mode --off`).
+
+#### Exemplo de uso:
+```bash
+# Executa o backup com configurações padrões do .env
+./nxctl backup 
+
+# Modo não interativo / debug para logs detalhados
+./nxctl backup --debug
+```
+
+---
+
+### `nxctl backup`
+
+O comando `snapshot` integra-se ao **Restic** para gerar backups incrementais, deduplicados e criptografados, ideais para armazenamento offsite e retenção de longo prazo.
+
+#### Como funciona:
+1. Carrega as credenciais e localização do repositório a partir de `RESTIC_REPOSITORY` e `RESTIC_PASSWORD`.
+2. Habilita o modo de manutenção do Nextcloud.
+3. Gera o dump consistente do PostgreSQL para uma área intermediária.
+4. Invoca o Restic para calcular deltas e enviar apenas os blocos modificados para o repositório.
+5. Restaura a operação normal do Nextcloud.
+6. (Opcional) Aplica políticas de retenção (`forget` / `prune`).
+
+#### Exemplo de uso:
+```bash
+# Execução padrão do backup incremental
+./nxctl snapshot 
+```
+
+---
+
+## 🤖 Automação e Scripts
+
+Na pasta `scripts/`, encontra-se o script utilitário `backup_semanal.sh`, pronto para ser integrado a um agendador como `cron` ou `systemd timers`:
+
+```bash
+# Tornar executável
+chmod +x scripts/backup_semanal.sh
+
+# Exemplo de entrada no crontab (todos os domingos às 02h00)
+# 0 2 * * 0 /opt/nxctl/scripts/backup_semanal.sh >> /var/log/nxctl_backup.log 2>&1
+```
+
+---
+
+## 🤝 Desenvolvimento e Contribuição
+
+1. Faça um Fork do projeto
+2. Crie uma branch para a funcionalidade: `git checkout -b feature/minha-feature`
+3. Commit suas alterações: `git commit -m 'feat: adiciona suporte a retenção customizada'`
+4. Push para a branch: `git push origin feature/minha-feature`
+5. Abra um Pull Request
+
+---
+
+## 📄 Licença
+
+Este projeto está distribuído sob a licença definida no arquivo [LICENSE](LICENSE).
