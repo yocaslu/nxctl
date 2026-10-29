@@ -1,6 +1,3 @@
-/*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -11,7 +8,7 @@ import (
 )
 
 var debug bool = false
-var MODULE_NAME string = "cmd"
+var ModuleName string = "cmd"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
